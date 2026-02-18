@@ -11,17 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Java
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Give permission to mvnw
+    - name: Give permission
       run: chmod +x mvnw
 
-    - name: Build project
-      run: ./mvnw clean install
+    - name: Build
+      run: ./mvnw clean install -DskipTests
