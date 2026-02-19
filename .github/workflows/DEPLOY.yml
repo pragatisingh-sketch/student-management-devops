@@ -1,0 +1,50 @@
+name: Spring Boot CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+  SERVICE_NAME: student-service
+  REGION: asia-south1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Permission
+      run: chmod +x mvnw
+
+    - name: Build
+      run: ./mvnw clean package -DskipTests
+
+    - name: Auth GCP
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_KEY }}
+
+    - name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Build Image
+      run: |
+        gcloud builds submit --tag gcr.io/$PROJECT_ID/student-service
+
+    - name: Deploy Cloud Run
+      run: |
+        gcloud run deploy student-service \
+        --image gcr.io/$PROJECT_ID/student-service \
+        --region asia-south1 \
+        --platform managed \
+        --allow-unauthenticated
