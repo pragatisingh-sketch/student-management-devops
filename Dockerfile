@@ -1,14 +1,19 @@
-# 1. Use JRE instead of JDK for a smaller, more secure runtime image
-FROM eclipse-temurin:17-jre-jammy
-
+# Stage 1: Build the JAR using Maven
+FROM maven:3.8.4-openjdk-11-slim AS build
 WORKDIR /app
+# Copy only the pom.xml first to cache dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline
 
-# 2. Use a wildcard to find the JAR. 
-# This prevents the build from breaking if you change the project version in pom.xml
-COPY target/*.jar app.jar
+# Copy the source code and build the package
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# 3. Standard Cloud Run port
+# Stage 2: Create the final lightweight runtime image
+FROM eclipse-temurin:11-jre-jammy
+WORKDIR /app
+# Copy the JAR from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8080
-
-# 4. Use the PORT env variable provided by Cloud Run (defaults to 8080 if not set)
 ENTRYPOINT ["java", "-Dserver.port=${PORT:8080}", "-jar", "app.jar"]
