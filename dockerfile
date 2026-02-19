@@ -1,18 +1,14 @@
-# ---------- STAGE 1: Build ----------
-FROM maven:3.9.9-eclipse-temurin-17 AS builder
-
-WORKDIR /app
-COPY . .
-
-RUN mvn clean package -DskipTests
-
-# ---------- STAGE 2: Run ----------
-FROM eclipse-temurin:17-jdk-jammy
+# 1. Use JRE instead of JDK for a smaller, more secure runtime image
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
-COPY --from=builder /app/target/*.jar app.jar
+# 2. Use a wildcard to find the JAR. 
+# This prevents the build from breaking if you change the project version in pom.xml
+COPY target/*.jar app.jar
 
+# 3. Standard Cloud Run port
 EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","app.jar"]
+# 4. Use the PORT env variable provided by Cloud Run (defaults to 8080 if not set)
+ENTRYPOINT ["java", "-Dserver.port=${PORT:8080}", "-jar", "app.jar"]
