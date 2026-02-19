@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PROJECT_ID: ${{ secrets.GCP_PROJECT }}  # Your GCP project ID
-      SERVICE: github-deploy                  # Cloud Run service name (lowercase, no slashes)
-      REGION: asia-south1                     # Cloud Run region
+      PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+      SERVICE: github-deploy
+      REGION: asia-south1
 
     steps:
     # 1️⃣ Checkout code
@@ -33,9 +33,7 @@ jobs:
     - name: Cache Maven packages
       uses: actions/cache@v3
       with:
-        path: |
-          ~/.m2/repository
-          !~/.m2/repository/org/apache/maven/plugins/maven-surefire-plugin
+        path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
@@ -56,17 +54,30 @@ jobs:
 
     # 8️⃣ Build Docker image and push to Container Registry
     - name: Build Docker Image
+      shell: bash
       run: |
-        echo "Building Docker image for Cloud Run..."
-        # Convert service name to lowercase to avoid Docker/GCR errors
-        gcloud builds submit --tag gcr.io/$PROJECT_ID/${SERVICE,,} .
+        # We assign to a local variable and trim any potential whitespace/newlines
+        CLEAN_PROJECT_ID=$(echo "${{ env.PROJECT_ID }}" | xargs)
+        IMAGE_NAME=$(echo "${{ env.SERVICE }}" | tr '[:upper:]' '[:lower:]' | xargs)
+        
+        IMAGE_TAG="gcr.io/${CLEAN_PROJECT_ID}/${IMAGE_NAME}"
+        
+        echo "Building Docker image: $IMAGE_TAG"
+        gcloud builds submit --tag "$IMAGE_TAG" .
 
     # 9️⃣ Deploy to Cloud Run
     - name: Deploy to Cloud Run
+      shell: bash
       run: |
-        echo "Deploying to Cloud Run service $SERVICE..."
-        gcloud run deploy ${SERVICE,,} \
-          --image gcr.io/$PROJECT_ID/${SERVICE,,}
-          --region $REGION \
+        CLEAN_PROJECT_ID=$(echo "${{ env.PROJECT_ID }}" | xargs)
+        IMAGE_NAME=$(echo "${{ env.SERVICE }}" | tr '[:upper:]' '[:lower:]' | xargs)
+        
+        IMAGE_TAG="gcr.io/${CLEAN_PROJECT_ID}/${IMAGE_NAME}"
+        
+        echo "Deploying $IMAGE_NAME to region ${{ env.REGION }}..."
+        
+        gcloud run deploy "$IMAGE_NAME" \
+          --image "$IMAGE_TAG" \
+          --region "${{ env.REGION }}" \
           --platform managed \
           --allow-unauthenticated
