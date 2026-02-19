@@ -10,6 +10,8 @@ jobs:
 
     env:
       PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+      SERVICE: GITHUB-DEPLOY   # Your actual Cloud Run service name
+      REGION: asia-south1      # Replace with your real region if different
 
     steps:
     - name: Checkout
@@ -24,7 +26,7 @@ jobs:
     - name: Permission
       run: chmod +x mvnw
 
-    - name: Build
+    - name: Build JAR
       run: ./mvnw clean package -DskipTests
 
     - name: Auth GCP
@@ -35,9 +37,64 @@ jobs:
     - name: Setup gcloud
       uses: google-github-actions/setup-gcloud@v2
 
-    - name: Build Image
-      run: gcloud builds submit --tag gcr.io/$PROJECT_ID/student-service .
+    - name: Build Docker Image
+      run: gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE .
 
-    - name: Deploy Cloud Run
+    - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy student-service \
+        gcloud run deploy $SERVICE \
+          --image gcr.io/$PROJECT_ID/$SERVICE \
+          --region $REGION \
+          --platform managed \
+          --allow-unauthenticated
+
+
+
+
+
+
+
+
+# name: Spring Boot CI/CD
+
+# on:
+#   push:
+#     branches: [ main ]
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     env:
+#       PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+
+#     steps:
+#     - name: Checkout
+#       uses: actions/checkout@v4
+
+#     - name: Setup Java
+#       uses: actions/setup-java@v4
+#       with:
+#         java-version: '17'
+#         distribution: 'temurin'
+
+#     - name: Permission
+#       run: chmod +x mvnw
+
+#     - name: Build
+#       run: ./mvnw clean package -DskipTests
+
+#     - name: Auth GCP
+#       uses: google-github-actions/auth@v2
+#       with:
+#         credentials_json: ${{ secrets.GCP_KEY }}
+
+#     - name: Setup gcloud
+#       uses: google-github-actions/setup-gcloud@v2
+
+#     - name: Build Image
+#       run: gcloud builds submit --tag gcr.io/$PROJECT_ID/student-service .
+
+#     - name: Deploy Cloud Run
+#       run: |
+#         gcloud run deploy student-service \
