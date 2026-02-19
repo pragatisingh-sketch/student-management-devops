@@ -9,27 +9,27 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PROJECT_ID: ${{ secrets.GCP_PROJECT }}   # Your GCP project ID
-      SERVICE: github-deploy                   # Cloud Run service name (lowercase, no slashes)
-      REGION: asia-south1                      # Replace with your Cloud Run region
+      PROJECT_ID: ${{ secrets.GCP_PROJECT }}  # Your GCP project ID
+      SERVICE: github-deploy                  # Cloud Run service name (lowercase, no slashes)
+      REGION: asia-south1                     # Cloud Run region
 
     steps:
-    # Step 1: Checkout code
+    # 1️⃣ Checkout code
     - name: Checkout
       uses: actions/checkout@v4
 
-    # Step 2: Setup Java 17
+    # 2️⃣ Setup Java 17
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    # Step 3: Make Maven wrapper executable
+    # 3️⃣ Make Maven wrapper executable
     - name: Permission
       run: chmod +x mvnw
 
-    # Step 4: Cache Maven dependencies for faster builds
+    # 4️⃣ Cache Maven dependencies
     - name: Cache Maven packages
       uses: actions/cache@v3
       with:
@@ -40,32 +40,33 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    # Step 5: Build JAR file
+    # 5️⃣ Build JAR
     - name: Build JAR
       run: ./mvnw clean package -DskipTests
 
-    # Step 6: Authenticate to Google Cloud
+    # 6️⃣ Authenticate to GCP
     - name: Auth GCP
       uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GCP_KEY }}
 
-    # Step 7: Setup gcloud CLI
+    # 7️⃣ Setup gcloud CLI
     - name: Setup gcloud
       uses: google-github-actions/setup-gcloud@v2
 
-    # Step 8: Build Docker image and push to Container Registry
+    # 8️⃣ Build Docker image and push to Container Registry
     - name: Build Docker Image
       run: |
         echo "Building Docker image for Cloud Run..."
-        gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE .
+        # Convert service name to lowercase to avoid Docker/GCR errors
+        gcloud builds submit --tag gcr.io/$PROJECT_ID/${SERVICE,,} .
 
-    # Step 9: Deploy to Cloud Run
+    # 9️⃣ Deploy to Cloud Run
     - name: Deploy to Cloud Run
       run: |
         echo "Deploying to Cloud Run service $SERVICE..."
-        gcloud run deploy $SERVICE \
-          --image gcr.io/$PROJECT_ID/$SERVICE \
+        gcloud run deploy ${SERVICE,,} \
+          --image gcr.io/$PROJECT_ID/${SERVICE,,} \
           --region $REGION \
           --platform managed \
           --allow-unauthenticated
