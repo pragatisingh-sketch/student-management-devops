@@ -66,7 +66,7 @@ jobs:
       run: |
         echo "Deploying to Cloud Run service $SERVICE..."
         gcloud run deploy ${SERVICE,,} \
-          --image gcr.io/$PROJECT_ID/${SERVICE,,} \
+          --image gcr.io/$PROJECT_ID/${SERVICE,,}
           --region $REGION \
           --platform managed \
           --allow-unauthenticated
