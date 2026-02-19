@@ -10,7 +10,7 @@ jobs:
 
     env:
       PROJECT_ID: ${{ secrets.GCP_PROJECT }}
-      SERVICE: GITHUB-DEPLOY   # Your actual Cloud Run service name
+      SERVICE: github-deploy   # Your actual Cloud Run service name
       REGION: asia-south1      # Replace with your real region if different
 
     steps:
