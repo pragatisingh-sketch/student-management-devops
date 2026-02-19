@@ -1,19 +1,18 @@
-# Stage 1: Build the JAR using Maven
-FROM maven:3.8.4-openjdk-11-slim AS build
+# Stage 1: Build stage
+FROM maven:3.8.5-openjdk-11-slim AS build
 WORKDIR /app
-# Copy only the pom.xml first to cache dependencies
+# Copy the pom.xml and source code
 COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Copy the source code and build the package
 COPY src ./src
+# Build the application
 RUN mvn clean package -DskipTests
 
-# Stage 2: Create the final lightweight runtime image
+# Stage 2: Runtime stage
 FROM eclipse-temurin:11-jre-jammy
 WORKDIR /app
-# Copy the JAR from the build stage
+# Copy the JAR from the build stage specifically
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
+# Use the PORT environment variable for Cloud Run compatibility
 ENTRYPOINT ["java", "-Dserver.port=${PORT:8080}", "-jar", "app.jar"]
