@@ -1,11 +1,18 @@
-FROM openjdk:17-jdk-slim
+# ---------- STAGE 1: Build ----------
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 COPY . .
 
-RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
+
+# ---------- STAGE 2: Run ----------
+FROM eclipse-temurin:17-jdk-jammy
+
+WORKDIR /app
+
+COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-CMD ["java","-jar","target/student-management-system-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
