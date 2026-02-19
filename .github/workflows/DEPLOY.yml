@@ -4,14 +4,12 @@ on:
   push:
     branches: [ main ]
 
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
-  SERVICE_NAME: student-service
-  REGION: asia-south1
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT }}
 
     steps:
     - name: Checkout
@@ -38,13 +36,8 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
 
     - name: Build Image
-      run: |
-        gcloud builds submit --tag gcr.io/$PROJECT_ID/student-service
+      run: gcloud builds submit --tag gcr.io/$PROJECT_ID/student-service .
 
     - name: Deploy Cloud Run
       run: |
         gcloud run deploy student-service \
-        --image gcr.io/$PROJECT_ID/student-service \
-        --region asia-south1 \
-        --platform managed \
-        --allow-unauthenticated
